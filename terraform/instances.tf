@@ -18,10 +18,10 @@ resource "cloudflare_dns_record" "recordCNAME" {
 
 resource "cloudflare_dns_record" "connection" {
   zone_id = var.cloudflare_zone_id
-  name = "vps"
-  type = "CNAME"
+  name    = "vps"
+  type    = "CNAME"
   content = cloudflare_dns_record.recordA.name
-  ttl = 1
+  ttl     = 1
   proxied = false
 }
 
