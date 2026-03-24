@@ -1,4 +1,4 @@
-# Automatyzacja infrastruktury – Terraform + Ansible
+# Automatyzacja zarządzania infrastrukturą serwerową i wdrożenie aplikacji oparte na podejściu Infrastructure as Code (IaC)
 
 ## Opis projektu
 
