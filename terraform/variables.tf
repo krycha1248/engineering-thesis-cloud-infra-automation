@@ -6,5 +6,5 @@ variable "cloudflare_zone_id" {
 variable "domain_name" {
   sensitive = false
   type      = string
-  default   = "shiplify.pl"
+  default   = "app.wlodek.net"
 }

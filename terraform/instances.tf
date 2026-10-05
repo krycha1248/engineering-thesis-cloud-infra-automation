@@ -9,7 +9,7 @@ resource "cloudflare_dns_record" "recordA" {
 
 resource "cloudflare_dns_record" "recordCNAME" {
   zone_id = var.cloudflare_zone_id
-  name    = "www"
+  name    = "www.${var.domain_name}"
   type    = "CNAME"
   content = cloudflare_dns_record.recordA.name
   ttl     = 1
