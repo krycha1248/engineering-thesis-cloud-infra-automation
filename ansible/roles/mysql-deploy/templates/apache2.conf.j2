@@ -1,0 +1,11 @@
+<VirtualHost *:80>
+    ServerName {{ pma_domain_name }}
+    DocumentRoot /var/www/{{ pma_domain_name }}
+
+    <Directory /var/www/{{ pma_domain_name }}>
+        Options FollowSymLinks
+        DirectoryIndex index.php
+        AllowOverride All
+        Require all granted
+    </Directory>
+</VirtualHost>

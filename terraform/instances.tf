@@ -1,4 +1,4 @@
-resource "cloudflare_dns_record" "recordA" {
+resource "cloudflare_dns_record" "appRecordA" {
   zone_id = var.cloudflare_zone_id
   name    = var.domain_name
   type    = "A"
@@ -7,11 +7,29 @@ resource "cloudflare_dns_record" "recordA" {
   proxied = true
 }
 
-resource "cloudflare_dns_record" "recordCNAME" {
+resource "cloudflare_dns_record" "appRecordCNAME" {
   zone_id = var.cloudflare_zone_id
-  name    = "www.${var.domain_name}"
+  name    = "www.${cloudflare_dns_record.appRecordA.name}"
   type    = "CNAME"
-  content = cloudflare_dns_record.recordA.name
+  content = cloudflare_dns_record.appRecordA.name
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "pmaRecordA" {
+  zone_id = var.cloudflare_zone_id
+  name    = var.pma_domain_name
+  type    = "A"
+  content = openstack_compute_instance_v2.instance.network[0].fixed_ip_v4
+  ttl     = 1
+  proxied = true
+}
+
+resource "cloudflare_dns_record" "pmaRecordCNAME" {
+  zone_id = var.cloudflare_zone_id
+  name    = "www.${cloudflare_dns_record.pmaRecordA.name}"
+  type    = "CNAME"
+  content = cloudflare_dns_record.pmaRecordA.name
   ttl     = 1
   proxied = true
 }
@@ -19,8 +37,8 @@ resource "cloudflare_dns_record" "recordCNAME" {
 resource "cloudflare_dns_record" "connection" {
   zone_id = var.cloudflare_zone_id
   name    = "vps"
-  type    = "CNAME"
-  content = cloudflare_dns_record.recordA.name
+  type    = "A"
+  content = openstack_compute_instance_v2.instance.network[0].fixed_ip_v4
   ttl     = 1
   proxied = false
 }
@@ -35,12 +53,13 @@ resource "openstack_compute_instance_v2" "instance" {
   }
 }
 
-resource "ansible_playbook" "astro" {
+resource "ansible_playbook" "playbook" {
   name       = openstack_compute_instance_v2.instance.network[0].fixed_ip_v4
   playbook   = "${path.module}/../ansible/deploy.yml"
   replayable = true
   extra_vars = {
-    domain_name                  = var.domain_name
+    app_domain_name              = cloudflare_dns_record.appRecordA.name
+    pma_domain_name              = cloudflare_dns_record.pmaRecordA.name
     become                       = true
     ansible_user                 = "debian"
     ansible_ssh_private_key_file = "~/ssh_klucz"
@@ -51,5 +70,5 @@ resource "ansible_playbook" "astro" {
 }
 
 output "ansible_stdout" {
-  value = ansible_playbook.astro.ansible_playbook_stdout
+  value = ansible_playbook.playbook.ansible_playbook_stdout
 }

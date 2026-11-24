@@ -8,3 +8,9 @@ variable "domain_name" {
   type      = string
   default   = "app.wlodek.net"
 }
+
+variable "pma_domain_name" {
+  sensitive = false
+  type      = string
+  default   = "pma.wlodek.net"
+}

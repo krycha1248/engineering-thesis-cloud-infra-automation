@@ -1,10 +1,10 @@
 <VirtualHost *:80>
-    ServerName {{ domain_name }}
-    ServerAlias www.{{ domain_name }}
+    ServerName {{ app_domain_name }}
+    ServerAlias www.{{ app_domain_name }}
 
-    DocumentRoot /var/www/{{ domain_name }}
+    DocumentRoot /var/www/{{ app_domain_name }}
 
-    <Directory /var/www/{{ domain_name }}>
+    <Directory /var/www/{{ app_domain_name }}>
         Options Indexes FollowSymLinks
         AllowOverride All
         Require all granted

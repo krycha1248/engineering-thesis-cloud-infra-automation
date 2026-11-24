@@ -13,4 +13,5 @@
   roles:
     - debian-deploy
     - astro-deploy
+    - mysql-deploy
 ...

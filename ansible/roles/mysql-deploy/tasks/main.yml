@@ -1,0 +1,107 @@
+---
+- name: Install required packages
+  ansible.builtin.apt:
+    name:
+      - mariadb-server
+      - mariadb-client
+      - python3-pymysql
+      - tar
+      - php-fpm
+      - libapache2-mod-php
+      - php-mysql
+      - php-mbstring
+      - php-zip
+      - php-gd
+      - php-xml
+      - php-curl
+    state: present
+    update_cache: true
+  notify: 
+    - Autostart mysql
+- name: Create MySQL database
+  ansible.builtin.mysql_db:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "test_db"
+    state: present
+- name: Create MySQL user
+  ansible.builtin.mysql_user:
+    login_unix_socket: /var/run/mysqld/mysqld.sock
+    name: "test_user"
+    password: "test_password"
+    priv: "test_db.*:ALL"
+    state: present
+- name: Download phpmyadmin archive
+  ansible.builtin.get_url:
+    url: https://files.phpmyadmin.net/phpMyAdmin/5.2.3/phpMyAdmin-5.2.3-all-languages.tar.gz
+    dest: /tmp/phpmyadmin.tar.gz
+    mode: '0640'
+- name: Ensure target directory exists
+  ansible.builtin.file:
+    path: "/var/www/{{ pma_domain_name }}"
+    state: directory
+    owner: www-data
+    group: www-data
+    mode: '0750'
+- name: Extract phpmyadmin
+  ansible.builtin.unarchive:
+    src: /tmp/phpmyadmin.tar.gz
+    dest: "/var/www/{{ pma_domain_name }}"
+    mode: 'u=rwX,g=rX,o='
+    owner: www-data
+    group: www-data
+    remote_src: true
+    extra_opts:
+      - --strip-components=1
+- name: Create config file
+  register: config_file
+  ansible.builtin.copy:
+    src: "/var/www/{{ pma_domain_name }}/config.sample.inc.php"
+    dest: "/var/www/{{ pma_domain_name }}/config.inc.php"
+    mode: '0640'
+    owner: www-data
+    group: www-data
+    remote_src: true
+    force: false
+- name: Set config values
+  when: config_file.changed
+  ansible.builtin.lineinfile:
+    path: "/var/www/{{ pma_domain_name }}/config.inc.php"
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+    create: true
+  with_items: 
+    - { regexp: '.*blowfish_secret.*', line: "$cfg['blowfish_secret'] = '{{ lookup('password', '/dev/null length=32 chars=ascii_letters,digits') }}';" }
+- name: Install apache2 web server
+  ansible.builtin.package:
+    name: apache2
+    state: present
+  notify: Autostart apache2
+- name: Pass apache2 config
+  ansible.builtin.template:
+    src: apache2.conf.j2
+    dest: "/etc/apache2/sites-available/{{ pma_domain_name }}.conf"
+    mode: "0644"
+- name: Enable config
+  ansible.builtin.file:
+    src: "/etc/apache2/sites-available/{{ pma_domain_name }}.conf"
+    dest: "/etc/apache2/sites-enabled/{{ pma_domain_name }}.conf"
+    state: link
+  notify: Restart apache2
+- name: Open firewall ports
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+  with_items:
+    - 80
+    - 443
+- name: Save iptables rules
+  community.general.iptables_state:
+    state: saved
+    ip_version: "{{ item.version }}"
+    path: "/etc/iptables/rules.{{ item.name }}"
+  with_items:
+    - { version: 'ipv4', name: 'v4' }
+    - { version: 'ipv6', name: 'v6' }
+...

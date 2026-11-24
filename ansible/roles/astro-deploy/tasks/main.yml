@@ -51,26 +51,26 @@
   changed_when: build_result.rc == 0
   when: not lookup('file', '/tmp/my-website/dist', errors='ignore')
   environment:
-    PUBLIC_SITE_URL: "https://{{ domain_name }}"
+    PUBLIC_SITE_URL: "https://{{ app_domain_name }}"
 - name: Remove htaccess file
   ansible.builtin.file:
     state: absent
     path: /tmp/my-website/dist/.htaccess
 - name: Ensure target directory exists
   ansible.builtin.file:
-    path: "/var/www/{{ domain_name }}"
+    path: "/var/www/{{ app_domain_name }}"
     state: directory
     owner: www-data
     group: www-data
-    mode: '0755'
-- name: Deploy Astro build (dist) to /var/www/shiplify.pl
+    mode: '0750'
+- name: Deploy Astro build (dist) to /var/www/
   ansible.posix.synchronize:
     src: /tmp/my-website/dist/
-    dest: "/var/www/{{ domain_name }}/"
+    dest: "/var/www/{{ app_domain_name }}/"
     recursive: true
     delete: true
     rsync_opts:
-      - "--chmod=Du=rwx,Dgo=rx,Fu=rw,Fgo=r"
+      - "--chmod=Du=rwx,Dg=rx,Do=,Fu=rw,Fg=r,Fo="
       - "--chown=www-data:www-data"
   delegate_to: "{{ inventory_hostname }}"
 - name: Remove source directory after deploy
@@ -85,12 +85,12 @@
 - name: Pass apache2 config
   ansible.builtin.template:
     src: apache2.conf.j2
-    dest: "/etc/apache2/sites-available/{{ domain_name }}.conf"
+    dest: "/etc/apache2/sites-available/{{ app_domain_name }}.conf"
     mode: "0644"
 - name: Enable config
   ansible.builtin.file:
-    src: "/etc/apache2/sites-available/{{ domain_name }}.conf"
-    dest: "/etc/apache2/sites-enabled/{{ domain_name }}.conf"
+    src: "/etc/apache2/sites-available/{{ app_domain_name }}.conf"
+    dest: "/etc/apache2/sites-enabled/{{ app_domain_name }}.conf"
     state: link
   notify: Restart apache2
 - name: Open firewall ports
