@@ -14,3 +14,9 @@ variable "pma_domain_name" {
   type      = string
   default   = "pma.wlodek.net"
 }
+
+variable "ftp_domain_name" {
+  sensitive = false
+  type      = string
+  default   = "files.wlodek.net"
+}

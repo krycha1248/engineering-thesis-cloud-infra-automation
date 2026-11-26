@@ -1,0 +1,66 @@
+---
+- name: Install dependencies
+  ansible.builtin.apt:
+    name:
+      - vsftpd
+    state: present
+    update_cache: true
+- name: Create FTP root directory
+  ansible.builtin.file:
+    path: "/srv/ftp"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+- name: Create FTP user
+  ansible.builtin.user:
+    name: "ftp_user"
+    password: "{{ 'ftp_password' | password_hash('sha512') }}"
+    shell: "/usr/sbin/nologin"
+    home: "/srv/ftp/ftp_user"
+    create_home: false
+    state: present
+- name: Create FTP user home directory
+  ansible.builtin.file:
+    path: "/srv/ftp/ftp_user"
+    state: directory
+    owner: "root"
+    group: "root"
+    mode: "0755"
+- name: Create FTP user upload directory
+  ansible.builtin.file:
+    path: "/srv/ftp/ftp_user/FTP"
+    state: directory
+    owner: "ftp_user"
+    group: "ftp_user"
+    mode: "0755"
+- name: Add nologin shell to /etc/shells
+  ansible.builtin.lineinfile:
+    path: "/etc/shells"
+    line: "/usr/sbin/nologin"
+    create: true
+- name: Pass vsftpd config
+  ansible.builtin.template:
+    src: vsftpd.conf.j2
+    dest: "/etc/vsftpd.conf"
+    mode: "0644"
+  notify: Restart vsftpd
+- name: Open firewall ports
+  ansible.builtin.iptables:
+    chain: INPUT
+    protocol: tcp
+    destination_port: "{{ item }}"
+    jump: ACCEPT
+  with_items:
+    - 20
+    - 21
+    - 40000:40100
+- name: Save iptables rules
+  community.general.iptables_state:
+    state: saved
+    ip_version: "{{ item.version }}"
+    path: "/etc/iptables/rules.{{ item.name }}"
+  with_items:
+    - { version: 'ipv4', name: 'v4' }
+    - { version: 'ipv6', name: 'v6' }
+...

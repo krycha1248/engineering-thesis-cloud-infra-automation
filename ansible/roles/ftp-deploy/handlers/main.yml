@@ -1,0 +1,11 @@
+- name: Autostart vsftpd
+  ansible.builtin.service:
+    name: vsftpd
+    state: started
+    enabled: true
+- name: Restart vsftpd
+  ansible.builtin.service:
+    name: vsftpd
+    state: restarted
+    enabled: true
+...
